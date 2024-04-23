@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -6,7 +6,8 @@ import {
   Autocomplete,
   DirectionsRenderer,
 } from "@react-google-maps/api";
-import { useForm } from "react-hook-form";
+import { get, useForm } from "react-hook-form";
+import useInterval from "use-interval";
 
 function App() {
   const {
@@ -26,12 +27,12 @@ function App() {
 
   const [currentLocation, setCurrentLocation] = useState(null);
 
-  const handleRoute = async (data) => {
+  const updateRouteHelper = async (currentLocation, destination) => {
     if (isLoaded) {
       const directionsService = new window.google.maps.DirectionsService();
       const result = await directionsService.route({
         origin: currentLocation,
-        destination: data.destination,
+        destination: destination,
         travelMode: window.google.maps.TravelMode.DRIVING,
       });
       setDirectionResponse(result);
@@ -43,18 +44,36 @@ function App() {
         console.log("No direction response");
       }
     } else {
-      alert("Google Maps not loaded");
+      alert("Google Maps not loaded enabled or location  permission denied");
     }
   };
 
+  const handleRoute = async (data) => {
+    const destination = data.destination;
+    localStorage.setItem("destination", destination);
+    updateRouteHelper(currentLocation, destination);
+  };
+
+  const [notLocationEnabledNiceMessage, setNotLocationEnabledNiceMessage] =
+    useState("");
+
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setCurrentLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-      });
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCurrentLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          if (error.code === error.PERMISSION_DENIED) {
+            setNotLocationEnabledNiceMessage(
+              "Location permission denied. Please enable location permission to use this app"
+            );
+          }
+        }
+      );
     }
   };
 
@@ -63,28 +82,25 @@ function App() {
     lng: 3.3792,
   };
 
-  useLayoutEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
-  }, [isLoaded]);
-
   useEffect(() => {
     getCurrentLocation();
   }, []);
 
-  useEffect(() => {
-    //   update  current location every 3 sec and update marker for current location on the map without refreshing the page
-    // setInterval(() => {
-    //   getCurrentLocation();
-    // }, 3000);
-
-    // return () => clearInterval(interval);
-  }, []);
+  useInterval(() => {
+    getCurrentLocation();
+    if (localStorage.getItem("destination")) {
+      updateRouteHelper(currentLocation, localStorage.getItem("destination"));
+    }
+  }, 10000);
 
   return (
     <main className="flex justify-center items-center flex-col">
-      <header className="text-center py-8">
+      {notLocationEnabledNiceMessage && (
+        <div className="bg-red-500 text-white p-2 rounded-md m-4 fixed top-0 left-0  text-center">
+          {notLocationEnabledNiceMessage}
+        </div>
+      )}
+      <header className="text-center py-8 m-8">
         <div>
           <h1 className="text-3xl font-bold text-blue-800 mb-2">
             Real-Time Route Tracker
@@ -93,7 +109,6 @@ function App() {
             Track your route in real-time with interactive maps
           </p>
         </div>
-
         {isLoaded && (
           <form
             className="flex flex-col md:flex-row items-center justify-center mt-8"
@@ -129,6 +144,7 @@ function App() {
                   setDirectionResponse(null);
                   setDistance(null);
                   setDuration(null);
+                  localStorage.removeItem("destination");
                 }}
                 className="bg-red-500 text-white p-2 rounded-md"
               >
@@ -152,7 +168,7 @@ function App() {
         <GoogleMap
           mapContainerStyle={{
             height: "100vh",
-            width: "70%",
+            width: "80%",
           }}
           options={{
             zoomControl: true,
