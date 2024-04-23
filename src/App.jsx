@@ -10,7 +10,7 @@ import {
   Autocomplete,
   DirectionsRenderer,
 } from "@react-google-maps/api";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 import { useForm } from "react-hook-form";
 
@@ -35,30 +35,25 @@ function App() {
   const [duration, setDuration] = useState(null);
 
   const handleRoute = async (data) => {
-    console.log(data);
-
-    if (google && map) {
-      const directionsService = new google.maps.DirectionsService();
-
+    if (window.google && map) {
+      // Access `google` object only if it's defined
+      const directionsService = new window.google.maps.DirectionsService();
       const result = await directionsService.route({
         origin: data.origin,
         destination: data.destination,
-        // eslint-disable-next-line no-undef
-        travelMode: google.maps.TravelMode.DRIVING,
+        travelMode: window.google.maps.TravelMode.DRIVING,
       });
-
       setDirectionResponse(result);
 
       if (result) {
         setDistance(result.routes[0].legs[0].distance.text);
         setDuration(result.routes[0].legs[0].duration.text);
-        console.log(directionResponse);
       } else {
         alert("No route found");
       }
+    } else {
+      console.error("Google Maps API not loaded");
     }
-    // console.log(result.routes[0].legs[0].distance.text);
-    // console.log(result.routes[0].legs[0].duration.text);
   };
 
   const center = {
@@ -66,11 +61,13 @@ function App() {
     lng: 3.3792,
   };
 
-  useEffect(() => {
-    if (map) {
-      map.panTo(center);
+  useLayoutEffect(() => {
+    if (!isLoaded) {
+      return;
     }
-  }, [map, directionResponse]);
+  }, [isLoaded]);
+
+  useEffect(() => {}, [directionResponse]);
 
   return (
     <div className="flex  justify-center items-center flex-col">
@@ -79,7 +76,7 @@ function App() {
       <div className="flex flex-col">
         <form className="flex gap-4 m-4" onSubmit={handleSubmit(handleRoute)}>
           <div className="flex flex-col">
-            <Autocomplete>
+            {/* <Autocomplete>
               <input
                 type="text"
                 className="border-2 p-2 rounded-md border-gray-300"
@@ -88,22 +85,44 @@ function App() {
                   required: "This is required",
                 })}
               />
-            </Autocomplete>
+            </Autocomplete> */}
+
+            {window.google ? (
+              <Autocomplete>
+                <input
+                  type="text"
+                  className="border-2 p-2 rounded-md border-gray-300"
+                  placeholder="Enter Origin"
+                  {...register("origin", {
+                    required: "This is required",
+                  })}
+                />
+              </Autocomplete>
+            ) : (
+              <></>
+            )}
             <span className="text-red-500">
               {errors.origin && <p>{errors.origin.message}</p>}
             </span>
           </div>
           <div className="flex flex-col">
-            <Autocomplete>
-              <input
-                type="text"
-                className="border-2 p-2 rounded-md border-gray-300"
-                placeholder="Enter Destination"
-                {...register("destination", {
-                  required: "This is required",
-                })}
-              />
-            </Autocomplete>
+            {window.google ? (
+              <Autocomplete>
+                <input
+                  type="text"
+                  className="border-2 p-2 rounded-md border-gray-300"
+                  placeholder="Enter Destination"
+                  {...register("destination", {
+                    required: "This is required",
+                  })}
+                />
+              </Autocomplete>
+            ) : (
+              <></>
+            )}
+            {/* <Autocomplete>
+            
+            </Autocomplete> */}
             <span className="text-red-500">
               {errors.destination && <p>{errors.destination.message}</p>}
             </span>
