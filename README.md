@@ -1,6 +1,4 @@
-Great! Here's the updated README.md content tailored for a React Vite project:
 
----
 
 # MapProgressTracker
 

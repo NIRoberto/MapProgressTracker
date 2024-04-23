@@ -1,8 +1,4 @@
-// disable eslint for whole file
-
-/* eslint-disable no-undef */
-/* eslint-disable no-unused-vars */
-
+import { useEffect, useLayoutEffect, useState } from "react";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -10,15 +6,12 @@ import {
   Autocomplete,
   DirectionsRenderer,
 } from "@react-google-maps/api";
-import { useEffect, useLayoutEffect, useState } from "react";
-
 import { useForm } from "react-hook-form";
 
 function App() {
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors },
   } = useForm();
   const { isLoaded } = useJsApiLoader({
@@ -26,17 +19,13 @@ function App() {
     libraries: ["places"],
   });
 
-  const [map, setMap] = useState(/** @type google.maps.Maps */ (null));
-
+  const [map, setMap] = useState(null);
   const [directionResponse, setDirectionResponse] = useState(null);
-
   const [distance, setDistance] = useState(null);
-
   const [duration, setDuration] = useState(null);
 
   const handleRoute = async (data) => {
-    if (window.google && map) {
-      // Access `google` object only if it's defined
+    if (isLoaded) {
       const directionsService = new window.google.maps.DirectionsService();
       const result = await directionsService.route({
         origin: data.origin,
@@ -45,14 +34,14 @@ function App() {
       });
       setDirectionResponse(result);
 
-      if (result) {
+      if (directionResponse) {
         setDistance(result.routes[0].legs[0].distance.text);
         setDuration(result.routes[0].legs[0].duration.text);
       } else {
-        alert("No route found");
+        console.log("No direction response");
       }
     } else {
-      console.error("Google Maps API not loaded");
+      alert("Google Maps not loaded");
     }
   };
 
@@ -67,101 +56,92 @@ function App() {
     }
   }, [isLoaded]);
 
-  useEffect(() => {}, [directionResponse]);
+  useEffect(() => {}, [directionResponse, map]);
 
   return (
-    <div className="flex  justify-center items-center flex-col">
-      <h1 className="text-blue-800 text-3xl">Google Maps API</h1>
-
-      <div className="flex flex-col">
-        <form className="flex gap-4 m-4" onSubmit={handleSubmit(handleRoute)}>
-          <div className="flex flex-col">
-            {/* <Autocomplete>
-              <input
-                type="text"
-                className="border-2 p-2 rounded-md border-gray-300"
-                placeholder="Enter Origin"
-                {...register("origin", {
-                  required: "This is required",
-                })}
-              />
-            </Autocomplete> */}
-
-            {window.google ? (
-              <Autocomplete>
-                <input
-                  type="text"
-                  className="border-2 p-2 rounded-md border-gray-300"
-                  placeholder="Enter Origin"
-                  {...register("origin", {
-                    required: "This is required",
-                  })}
-                />
-              </Autocomplete>
-            ) : (
-              <></>
-            )}
-            <span className="text-red-500">
-              {errors.origin && <p>{errors.origin.message}</p>}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            {window.google ? (
-              <Autocomplete>
-                <input
-                  type="text"
-                  className="border-2 p-2 rounded-md border-gray-300"
-                  placeholder="Enter Destination"
-                  {...register("destination", {
-                    required: "This is required",
-                  })}
-                />
-              </Autocomplete>
-            ) : (
-              <></>
-            )}
-            {/* <Autocomplete>
-            
-            </Autocomplete> */}
-            <span className="text-red-500">
-              {errors.destination && <p>{errors.destination.message}</p>}
-            </span>
-          </div>
-          <div
-            className="flex  gap-4 justify-center items-center"
-            style={{ textAlign: "center" }}
-          >
-            <button
-              type="submit"
-              className="bg-blue-500 text-white p-2 rounded-md"
-            >
-              Search
-            </button>
-
-            <button
-              type="reset"
-              onClick={() => {
-                setDirectionResponse(null);
-                setDistance(null);
-                setDuration(null);
-              }}
-              className="bg-red-500 text-white p-2 rounded-md"
-            >
-              Reset
-            </button>
-          </div>
-        </form>
-
-        <div className="flex justify-between items-end">
-          <div
-            className=" flex gap-4  p-2 rounded-md"
-            style={{ textAlign: "center" }}
-          >
-            <p className="bg-blue-100 p-4 rounded-md">Distance: {distance}</p>
-            <p className="bg-blue-100 p-4 rounded-md">Duration: {duration}</p>
-          </div>
+    <main className="flex justify-center items-center flex-col">
+      <header className="text-center py-8">
+        <div>
+          <h1 className="text-3xl font-bold text-blue-800 mb-2">
+            Real-Time Route Tracker
+          </h1>
+          <p className="text-lg text-gray-600">
+            Track your route in real-time with interactive maps
+          </p>
         </div>
-      </div>
+
+        {isLoaded && (
+          <form
+            className="flex flex-col md:flex-row items-center justify-center mt-8"
+            onSubmit={handleSubmit(handleRoute)}
+          >
+            <Autocomplete>
+              <div className="flex-col flex">
+                <input
+                  type="text"
+                  className="border-2 p-2 rounded-md border-gray-300 mb-4 md:mb-0 md:mr-4"
+                  placeholder="Enter Origin"
+                  {...register("origin", { required: "This is required" })}
+                />
+                <span>
+                  {errors.origin && (
+                    <p className="text-red-500 text-sm">
+                      {errors.origin.message}
+                    </p>
+                  )}
+                </span>
+              </div>
+            </Autocomplete>
+
+            <Autocomplete>
+              <div className="flex flex-col">
+                <input
+                  type="text"
+                  className="border-2 p-2 rounded-md border-gray-300 mb-4 md:mb-0 md:mr-4"
+                  placeholder="Enter Destination"
+                  {...register("destination", { required: "This is required" })}
+                />
+                <span>
+                  {errors.destination && (
+                    <p className="text-red-500 text-sm">
+                      {errors.destination.message}
+                    </p>
+                  )}
+                </span>
+              </div>
+            </Autocomplete>
+            <div className="flex gap-4">
+              <button
+                type="submit"
+                className="bg-blue-800 text-white p-2 rounded-md mr-4"
+              >
+                Search
+              </button>
+              <button
+                type="reset"
+                onClick={() => {
+                  setDirectionResponse(null);
+                  setDistance(null);
+                  setDuration(null);
+                }}
+                className="bg-red-500 text-white p-2 rounded-md"
+              >
+                Reset
+              </button>
+            </div>
+          </form>
+        )}
+
+        {isLoaded && (
+          <div className="flex justify-between items-end mt-8">
+            <div className="flex gap-4 p-2 rounded-md">
+              <p className="bg-blue-100 p-4 rounded-md">Distance: {distance}</p>
+              <p className="bg-blue-100 p-4 rounded-md">Duration: {duration}</p>
+            </div>
+          </div>
+        )}
+      </header>
+
       {isLoaded ? (
         <GoogleMap
           mapContainerStyle={{
@@ -181,15 +161,21 @@ function App() {
           }}
         >
           <Marker position={center} />
-          {/*  DIFFERENT COORDINATE FOR MARKER */}
           {directionResponse && (
             <DirectionsRenderer directions={directionResponse} />
           )}
         </GoogleMap>
       ) : (
-        <p>Loading...</p>
+        <div className="animate-pulse flex justify-center items-center h-screen">
+          <div className="bg-gray-200 rounded-full h-12 w-12 mr-2"></div>
+          <div className="flex-1 space-y-4 py-1">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+          </div>
+        </div>
       )}
-    </div>
+    </main>
   );
 }
 
