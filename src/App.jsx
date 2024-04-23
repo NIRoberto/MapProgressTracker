@@ -15,7 +15,7 @@ function App() {
     formState: { errors },
   } = useForm();
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.VITE_MAP_API_KEY,
+    googleMapsApiKey: import.meta.env.VITE_KEY,
     libraries: ["places"],
   });
 
@@ -24,11 +24,13 @@ function App() {
   const [distance, setDistance] = useState(null);
   const [duration, setDuration] = useState(null);
 
+  const [currentLocation, setCurrentLocation] = useState(null);
+
   const handleRoute = async (data) => {
     if (isLoaded) {
       const directionsService = new window.google.maps.DirectionsService();
       const result = await directionsService.route({
-        origin: data.origin,
+        origin: currentLocation,
         destination: data.destination,
         travelMode: window.google.maps.TravelMode.DRIVING,
       });
@@ -45,6 +47,17 @@ function App() {
     }
   };
 
+  const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setCurrentLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      });
+    }
+  };
+
   const center = {
     lat: 6.5244,
     lng: 3.3792,
@@ -56,7 +69,18 @@ function App() {
     }
   }, [isLoaded]);
 
-  useEffect(() => {}, [directionResponse, map]);
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
+  useEffect(() => {
+    //   update  current location every 3 sec and update marker for current location on the map without refreshing the page
+    // setInterval(() => {
+    //   getCurrentLocation();
+    // }, 3000);
+
+    // return () => clearInterval(interval);
+  }, []);
 
   return (
     <main className="flex justify-center items-center flex-col">
@@ -75,24 +99,6 @@ function App() {
             className="flex flex-col md:flex-row items-center justify-center mt-8"
             onSubmit={handleSubmit(handleRoute)}
           >
-            <Autocomplete>
-              <div className="flex-col flex">
-                <input
-                  type="text"
-                  className="border-2 p-2 rounded-md border-gray-300 mb-4 md:mb-0 md:mr-4"
-                  placeholder="Enter Origin"
-                  {...register("origin", { required: "This is required" })}
-                />
-                <span>
-                  {errors.origin && (
-                    <p className="text-red-500 text-sm">
-                      {errors.origin.message}
-                    </p>
-                  )}
-                </span>
-              </div>
-            </Autocomplete>
-
             <Autocomplete>
               <div className="flex flex-col">
                 <input
@@ -161,6 +167,16 @@ function App() {
           }}
         >
           <Marker position={center} />
+
+          {currentLocation && (
+            <Marker
+              position={currentLocation}
+              icon={{
+                url: "https://maps.google.com/mapfiles/kml/paddle/ylw-blank.png",
+                scaledSize: new window.google.maps.Size(64, 64),
+              }}
+            />
+          )}
           {directionResponse && (
             <DirectionsRenderer directions={directionResponse} />
           )}
