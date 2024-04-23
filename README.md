@@ -51,14 +51,8 @@ npm run dev
 3. The application will display the route on the map and provide real-time updates on distance and duration.
 4. Optionally, click on the "Reset" button to clear the input fields and start a new search.
 
-## Contributing
 
-Contributions are welcome! Feel free to open an issue or submit a pull request.
 
-## License
 
-This project is licensed under the [MIT License](LICENSE).
 
 ---
-
-Feel free to customize this README further to fit your project's specific details and requirements!
